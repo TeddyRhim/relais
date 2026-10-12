@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Enums\OrganizationRole;
+use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -30,7 +32,31 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'organization_id' => Organization::factory(),
+            'role' => OrganizationRole::Owner,
         ];
+    }
+
+    /**
+     * Membre (non propriétaire) d'une organisation existante.
+     */
+    public function memberOf(Organization $organization): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'organization_id' => $organization->getKey(),
+            'role' => OrganizationRole::Member,
+        ]);
+    }
+
+    /**
+     * Propriétaire d'une organisation existante.
+     */
+    public function ownerOf(Organization $organization): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'organization_id' => $organization->getKey(),
+            'role' => OrganizationRole::Owner,
+        ]);
     }
 
     /**
