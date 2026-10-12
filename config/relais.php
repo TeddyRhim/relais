@@ -50,4 +50,9 @@ return [
     */
     'ingest_rate_per_minute' => (int) env('RELAIS_INGEST_RATE', 120),
 
+    /*
+    | Limite de débit de l'API, par clé (requêtes par minute).
+    */
+    'api_rate_per_minute' => (int) env('RELAIS_API_RATE', 60),
+
 ];

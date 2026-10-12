@@ -21,6 +21,9 @@
                     <x-nav-link :href="route('events.index')" :active="request()->routeIs('events.*')">
                         Événements
                     </x-nav-link>
+                    <x-nav-link :href="route('api-keys.index')" :active="request()->routeIs('api-keys.*')">
+                        API
+                    </x-nav-link>
                     <x-nav-link :href="route('billing.show')" :active="request()->routeIs('billing.*')">
                         Facturation
                     </x-nav-link>
