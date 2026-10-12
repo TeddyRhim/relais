@@ -1,3 +1,39 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    body { @apply bg-paper text-ink font-sans antialiased; }
+    code, pre { @apply font-mono; }
+    ::selection { background: #fbb98d; color: #0e1322; }
+}
+
+@layer components {
+    .card { @apply bg-white rounded-xl border border-ink/10 shadow-card p-6; }
+    .card > h3 { @apply font-display text-lg font-semibold text-ink; }
+    .flash-ok { @apply rounded-lg border border-moss/30 bg-moss/10 text-moss px-4 py-3 text-sm; }
+    .flash-key { @apply rounded-lg border border-ember-400/50 bg-ember-300/20 text-ink px-4 py-3 text-sm; }
+    .link { @apply text-ember-600 underline decoration-ember-500/40 underline-offset-2 hover:decoration-ember-600; }
+    .codeblock { @apply block rounded-lg bg-ink text-paper px-4 py-3 text-sm font-mono break-all; }
+    .kicker { @apply text-xs font-semibold uppercase tracking-[0.18em] text-ember-600; }
+
+    .tbl { @apply w-full text-sm text-left; }
+    .tbl thead th { @apply text-xs font-semibold uppercase tracking-wider text-ink-500 pb-2; }
+    .tbl tbody tr { @apply border-t border-ink/10 hover:bg-paper/70; }
+    .tbl td { @apply py-2.5 pr-3; }
+
+    .badge { @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium; }
+    .badge::before { content: ""; @apply h-1.5 w-1.5 rounded-full bg-current; }
+    .badge-ok { @apply bg-moss/10 text-moss; }
+    .badge-warn { @apply bg-amber/10 text-amber; }
+    .badge-bad { @apply bg-brick/10 text-brick; }
+    .badge-neutral { @apply bg-ink/5 text-ink-500; }
+    .badge-ember { @apply bg-ember-500/10 text-ember-700; }
+}
+
+/* Animation du signal (page d'accueil et connexion) ; désactivée si l'utilisateur réduit les animations. */
+@keyframes signal-flow { to { stroke-dashoffset: -48; } }
+@keyframes signal-pulse { 0%, 100% { opacity: .35; transform: scale(1); } 50% { opacity: 1; transform: scale(1.25); } }
+.signal-line { stroke-dasharray: 6 10; animation: signal-flow 2.4s linear infinite; }
+.signal-node { transform-box: fill-box; transform-origin: center; animation: signal-pulse 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .signal-line, .signal-node { animation: none; } }

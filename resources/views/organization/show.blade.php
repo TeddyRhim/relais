@@ -1,21 +1,21 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Organisation</h2>
+        <h2 class="font-display text-3xl font-bold text-ink">Organisation</h2>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
             @if (session('status'))
-                <div class="p-4 bg-green-50 text-green-800 sm:rounded-lg">{{ session('status') }}</div>
+                <div class="flash-ok">{{ session('status') }}</div>
             @endif
             @if (session('invitation_link'))
-                <div class="p-4 bg-yellow-50 text-yellow-900 sm:rounded-lg break-all">
+                <div class="flash-key break-all">
                     Lien d'invitation (affiché une seule fois) : {{ session('invitation_link') }}
                 </div>
             @endif
 
-            <div class="p-6 bg-white shadow-sm sm:rounded-lg">
-                <h3 class="font-medium text-lg text-gray-900">Nom</h3>
+            <div class="card">
+                <h3 class="font-display text-lg font-semibold text-ink">Nom</h3>
                 @if (auth()->user()->isOwner())
                     <form method="POST" action="{{ route('organization.update') }}" class="mt-4 flex gap-4 items-start">
                         @csrf
@@ -27,18 +27,18 @@
                         <x-primary-button>Enregistrer</x-primary-button>
                     </form>
                 @else
-                    <p class="mt-2 text-gray-700">{{ $organization->name }}</p>
+                    <p class="mt-2 text-ink-600">{{ $organization->name }}</p>
                 @endif
             </div>
 
-            <div class="p-6 bg-white shadow-sm sm:rounded-lg">
-                <h3 class="font-medium text-lg text-gray-900">Membres</h3>
-                <ul class="mt-4 divide-y">
+            <div class="card">
+                <h3 class="font-display text-lg font-semibold text-ink">Membres</h3>
+                <ul class="mt-4 divide-y divide-ink/10">
                     @foreach ($members as $member)
                         <li class="py-3 flex justify-between items-center">
-                            <span>{{ $member->name }} <span class="text-gray-500">({{ $member->email }})</span></span>
+                            <span>{{ $member->name }} <span class="text-ink-500">({{ $member->email }})</span></span>
                             <span class="flex items-center gap-4">
-                                <span class="text-sm text-gray-600">{{ $member->role->label() }}</span>
+                                <span class="text-sm text-ink-500">{{ $member->role->label() }}</span>
                                 @if (auth()->user()->isOwner() && ! $member->isOwner())
                                     <form method="POST" action="{{ route('members.destroy', $member->id) }}">
                                         @csrf
@@ -53,8 +53,8 @@
             </div>
 
             @if (auth()->user()->isOwner())
-                <div class="p-6 bg-white shadow-sm sm:rounded-lg">
-                    <h3 class="font-medium text-lg text-gray-900">Invitations</h3>
+                <div class="card">
+                    <h3 class="font-display text-lg font-semibold text-ink">Invitations</h3>
                     <form method="POST" action="{{ route('invitations.store') }}" class="mt-4 flex gap-4 items-start">
                         @csrf
                         <div class="flex-1">
@@ -63,10 +63,10 @@
                         </div>
                         <x-primary-button>Inviter</x-primary-button>
                     </form>
-                    <ul class="mt-4 divide-y">
+                    <ul class="mt-4 divide-y divide-ink/10">
                         @foreach ($invitations as $invitation)
                             <li class="py-3 flex justify-between items-center">
-                                <span>{{ $invitation->email }} <span class="text-gray-500">(expire le {{ $invitation->expires_at->format('d/m/Y') }})</span></span>
+                                <span>{{ $invitation->email }} <span class="text-ink-500">(expire le {{ $invitation->expires_at->format('d/m/Y') }})</span></span>
                                 <form method="POST" action="{{ route('invitations.destroy', $invitation) }}">
                                     @csrf
                                     @method('DELETE')

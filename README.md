@@ -14,7 +14,7 @@ Projet de démonstration (Laravel 12, PHP 8.2, Blade et Tailwind, Pest).
 
 ## Aperçu
 
-Les captures d'écran seront ajoutées avec des données d'exemple. Pour obtenir une instance remplie de données fictives, voir la commande de démonstration plus bas.
+L'interface est en français : accueil, tableau de bord (quota, activité des 14 derniers jours, derniers événements), liste et détail des événements avec l'historique des rejeux. Pour obtenir une instance remplie de données fictives, voir la commande de démonstration plus bas. Les captures publiées sont sur le portfolio de l'auteur.
 
 ## Installation
 
