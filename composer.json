@@ -1,9 +1,9 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "teddyrhim/relais",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "description": "Réception et rejeu de webhooks multi-organisations (projet de démonstration).",
+    "keywords": ["laravel", "webhooks", "saas", "multi-tenant"],
     "license": "MIT",
     "require": {
         "php": "^8.2",

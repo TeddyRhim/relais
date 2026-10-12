@@ -1,8 +1,21 @@
 # Relais
 
+[![CI](https://github.com/TeddyRhim/relais/actions/workflows/ci.yml/badge.svg)](https://github.com/TeddyRhim/relais/actions/workflows/ci.yml)
+[![Licence MIT](https://img.shields.io/badge/licence-MIT-informational.svg)](LICENSE)
+
 Service de réception et de rejeu de webhooks. Une organisation crée des sources, chacune avec sa propre adresse de réception ; Relais conserve chaque webhook reçu, vérifie sa signature, permet de le rejouer vers une adresse cible avec de nouvelles tentatives automatiques, et mesure la consommation par rapport à un quota mensuel.
 
 Projet de démonstration (Laravel 12, PHP 8.2, Blade et Tailwind, Pest).
+
+## Aperçu
+
+![Page d'accueil](docs/images/accueil.jpg)
+
+![Tableau de bord : quota du mois, activité des 14 derniers jours, derniers événements](docs/images/tableau-de-bord.jpg)
+
+![Détail d'un événement : contenu, en-têtes, signature vérifiée et historique des rejeux](docs/images/evenement.jpg)
+
+Les captures utilisent des données fictives (voir la commande de démonstration plus bas).
 
 ## Fonctionnalités
 
@@ -11,10 +24,7 @@ Projet de démonstration (Laravel 12, PHP 8.2, Blade et Tailwind, Pest).
 - Liste et détail des événements reçus, rejeu manuel avec suivi du statut et nouvelles tentatives espacées.
 - Plans gratuit et Pro avec quota mensuel ; la facturation passe par une interface, avec un faux fournisseur pour la démonstration (aucun paiement réel).
 - API en lecture seule, authentifiée par clés, avec limitation de débit.
-
-## Aperçu
-
-L'interface est en français : accueil, tableau de bord (quota, activité des 14 derniers jours, derniers événements), liste et détail des événements avec l'historique des rejeux. Pour obtenir une instance remplie de données fictives, voir la commande de démonstration plus bas. Les captures publiées sont sur le portfolio de l'auteur.
+- Interface en français.
 
 ## Installation
 
@@ -55,7 +65,7 @@ Créer un fichier `.env` contenant `APP_KEY` (obtenu avec `php artisan key:gener
 docker compose up --build
 ```
 
-L'application est servie sur le port 8080, avec PostgreSQL et un service dédié au traitement des rejeux.
+L'application est servie sur le port 8080, avec PostgreSQL et un service dédié au traitement des rejeux. Le faux fournisseur de facturation y est activé explicitement (`RELAIS_ALLOW_FAKE_BILLING`) : à retirer avec un vrai fournisseur.
 
 ## API
 
@@ -79,3 +89,11 @@ Les tests utilisent SQLite en mémoire. Pour exécuter la suite sur PostgreSQL, 
 ## Configuration
 
 Les réglages propres au projet sont dans `config/relais.php` et se surchargent par variables d'environnement (voir `.env.example`). Aucun secret n'est versionné.
+
+## Sécurité
+
+Voir [SECURITY.md](SECURITY.md) pour signaler une vulnérabilité.
+
+## Licence
+
+Code distribué sous licence [MIT](LICENSE).
