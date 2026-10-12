@@ -22,3 +22,6 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Notes de passation locales (chemins et contexte personnels)
+/docs/passation.md
