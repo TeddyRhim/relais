@@ -15,7 +15,7 @@ COPY resources ./resources
 # Tailwind lit les vues Blade pour retenir les classes utilisées.
 RUN npm run build
 
-FROM php:8.2-apache AS app
+FROM php:8.5-apache AS app
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 RUN apt-get update \
