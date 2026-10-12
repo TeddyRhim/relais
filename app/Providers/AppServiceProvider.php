@@ -31,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // API : par clé (ou par IP si la requête n'est pas authentifiée).
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(config('relais.api_rate_per_minute'))
+            ->by($request->user()?->currentAccessToken()?->id ? 'key:'.$request->user()->currentAccessToken()->id : 'ip:'.$request->ip()));
+
         // Une limite par source, plus une limite par adresse IP (contre le balayage de jetons).
         RateLimiter::for('ingest', fn (Request $request) => [
             Limit::perMinute(config('relais.ingest_rate_per_minute'))->by('token:'.$request->route('token')),
