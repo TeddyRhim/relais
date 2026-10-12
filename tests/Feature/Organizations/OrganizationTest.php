@@ -141,3 +141,21 @@ test('le propriétaire annule une invitation de son organisation', function () {
 
     expect(Invitation::withoutGlobalScopes()->count())->toBe(0);
 });
+
+test('un propriétaire ne peut pas supprimer son compte tant que d\'autres membres restent', function () {
+    $owner = User::factory()->create();
+    User::factory()->memberOf($owner->organization)->create();
+
+    $this->actingAs($owner)->delete('/profile', ['password' => 'password'])->assertSessionHasErrorsIn('userDeletion', 'password');
+
+    expect(User::find($owner->id))->not->toBeNull();
+});
+
+test('un propriétaire seul supprime son compte et son organisation', function () {
+    $owner = User::factory()->create();
+    $orgId = $owner->organization_id;
+
+    $this->actingAs($owner)->delete('/profile', ['password' => 'password'])->assertRedirect('/');
+
+    expect(User::find($owner->id))->toBeNull()->and(Organization::find($orgId))->toBeNull();
+});
