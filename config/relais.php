@@ -29,6 +29,23 @@ return [
     'allow_private_targets' => (bool) env('RELAIS_ALLOW_PRIVATE_TARGETS', false),
 
     /*
+    | Plans : quota d'événements reçus par mois civil. Prix fictifs, à titre d'affichage.
+    */
+    'plans' => [
+        'free' => ['label' => 'Gratuit', 'events_per_month' => 1000, 'price' => '0 EUR'],
+        'pro' => ['label' => 'Pro', 'events_per_month' => 50000, 'price' => '29 EUR par mois'],
+    ],
+
+    /*
+    | Facturation : "fake" (faux fournisseur, par défaut) ou un futur fournisseur réel.
+    | Le secret signe les webhooks entrants du fournisseur ; sans secret, l'endpoint les refuse.
+    */
+    'billing' => [
+        'driver' => env('BILLING_DRIVER', 'fake'),
+        'webhook_secret' => env('BILLING_WEBHOOK_SECRET'),
+    ],
+
+    /*
     | Limite de débit de la réception, par jeton de source (requêtes par minute).
     */
     'ingest_rate_per_minute' => (int) env('RELAIS_INGEST_RATE', 120),

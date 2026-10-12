@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Billing\Usage;
 use App\Models\Source;
 use App\Models\WebhookEvent;
 use App\Services\SignatureVerifier;
@@ -14,7 +15,7 @@ class IngestController extends Controller
     /** En-têtes dont la valeur n'est jamais conservée (les signatures restent : elles servent au rejeu). */
     private const SENSITIVE_HEADERS = '/auth|cookie|token|secret|password|api-?key/i';
 
-    public function __invoke(Request $request, string $token, CurrentOrganization $current, SignatureVerifier $verifier): JsonResponse
+    public function __invoke(Request $request, string $token, CurrentOrganization $current, SignatureVerifier $verifier, Usage $usage): JsonResponse
     {
         $source = Source::findByToken($token);
 
@@ -24,7 +25,11 @@ class IngestController extends Controller
 
         abort_if(strlen($body) > config('relais.max_body_bytes'), 413);
 
-        return $current->run($source->organization_id, function () use ($request, $source, $body, $verifier) {
+        return $current->run($source->organization_id, function () use ($request, $source, $body, $verifier, $usage) {
+            if ($usage->isExceeded($source->organization)) {
+                return response()->json(['error' => 'quota_exceeded'], 429);
+            }
+
             $status = $verifier->check($body, $source->signing_secret, $request->header($source->signature_header));
 
             if ($source->require_signature && $status !== WebhookEvent::SIGNATURE_VALID) {

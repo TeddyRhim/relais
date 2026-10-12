@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Billing\BillingProvider;
+use App\Billing\FakeBillingProvider;
 use App\Tenancy\CurrentOrganization;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use InvalidArgumentException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -16,6 +19,11 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(CurrentOrganization::class);
+
+        $this->app->bind(BillingProvider::class, fn () => match (config('relais.billing.driver')) {
+            'fake' => new FakeBillingProvider,
+            default => throw new InvalidArgumentException('Fournisseur de facturation inconnu : '.config('relais.billing.driver')),
+        });
     }
 
     /**
