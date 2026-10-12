@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\BillingController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\MemberController;
@@ -13,9 +15,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -24,6 +24,8 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/organization', [OrganizationController::class, 'show'])->name('organization.show');
 
+    Route::get('/billing', [BillingController::class, 'show'])->name('billing.show');
+
     Route::get('/sources', [SourceController::class, 'index'])->name('sources.index');
     Route::get('/sources/{source}', [SourceController::class, 'show'])->name('sources.show');
     Route::get('/events', [EventController::class, 'index'])->name('events.index');
@@ -31,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/events/{event}/replay', [ReplayController::class, 'store'])->middleware('throttle:30,1')->name('events.replay');
 
     Route::middleware('owner')->group(function () {
+        Route::put('/billing', [BillingController::class, 'update'])->name('billing.update');
         Route::post('/sources', [SourceController::class, 'store'])->name('sources.store');
         Route::patch('/sources/{source}', [SourceController::class, 'update'])->name('sources.update');
         Route::delete('/sources/{source}', [SourceController::class, 'destroy'])->name('sources.destroy');

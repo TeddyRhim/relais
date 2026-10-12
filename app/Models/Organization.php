@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Billing\Plan;
 use Database\Factories\OrganizationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,13 @@ class Organization extends Model
     use HasFactory;
 
     protected $fillable = ['name', 'slug'];
+
+    protected $attributes = ['plan' => 'free'];
+
+    protected function casts(): array
+    {
+        return ['plan' => Plan::class];
+    }
 
     protected static function booted(): void
     {
