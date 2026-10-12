@@ -66,7 +66,13 @@ class RegisteredUserController extends Controller
             if ($invitation) {
                 $organizationId = $invitation->organization_id;
                 $role = $invitation->role;
-                $invitation->forceFill(['accepted_at' => now()])->save();
+
+                // Réservation atomique : deux inscriptions simultanées ne peuvent pas consommer la même invitation.
+                $claimed = Invitation::withoutGlobalScopes()->whereKey($invitation->id)->whereNull('accepted_at')->update(['accepted_at' => now()]);
+
+                if ($claimed !== 1) {
+                    throw ValidationException::withMessages(['invitation' => 'Cette invitation est invalide ou expirée.']);
+                }
             } else {
                 $organizationId = Organization::create(['name' => $request->organization_name])->getKey();
                 $role = OrganizationRole::Owner;

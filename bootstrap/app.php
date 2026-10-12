@@ -1,7 +1,10 @@
 <?php
 
 use App\Http\Middleware\EnsureOwner;
+use App\Http\Middleware\LimitApiByIp;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetCurrentOrganization;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -36,7 +39,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Le contexte d'organisation doit exister avant la résolution des modèles de la route
         // (SubstituteBindings), sinon le scope global ne trouverait rien.
         $middleware->web(append: [SetCurrentOrganization::class]);
+        $middleware->append(SecurityHeaders::class);
         $middleware->prependToPriorityList(before: SubstituteBindings::class, prepend: SetCurrentOrganization::class);
+
+        // La limite par IP de l'API doit passer avant l'authentification (essais de clés invalides).
+        $middleware->prependToPriorityList(before: AuthenticatesRequests::class, prepend: LimitApiByIp::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(fn (Request $request) => $request->is('api/*') || $request->expectsJson());

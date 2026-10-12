@@ -16,6 +16,8 @@ use Illuminate\Http\Request;
  */
 class BillingWebhookController extends Controller
 {
+    private const TOLERANCE_SECONDS = 300;
+
     public function __invoke(Request $request, SignatureVerifier $verifier, BillingService $billing): JsonResponse
     {
         // Route sans session : une validation qui échoue doit répondre 422 en JSON, pas rediriger.
@@ -33,8 +35,12 @@ class BillingWebhookController extends Controller
         $payload = $request->validate([
             'type' => ['required', 'in:subscription.updated,subscription.canceled'],
             'reference' => ['required', 'string', 'max:255'],
+            'timestamp' => ['required', 'integer'],
             'plan' => ['required_if:type,subscription.updated', 'in:'.implode(',', array_column(Plan::cases(), 'value'))],
         ]);
+
+        // L'horodatage fait partie du corps signé : un message capturé ne peut être rejoué que 5 minutes.
+        abort_if(abs(time() - (int) $payload['timestamp']) > self::TOLERANCE_SECONDS, 401, 'Message trop ancien.');
 
         $organization = Organization::where('billing_reference', $payload['reference'])->first();
 
