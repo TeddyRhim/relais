@@ -12,7 +12,7 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Throwable;
 
@@ -74,15 +74,24 @@ class SendReplay implements ShouldQueue
                 $response = Http::timeout(config('relais.replay.timeout'))
                     ->withoutRedirecting()
                     ->withHeaders($headers)
+                    ->withOptions(['stream' => true])
                     ->withBody($event->body, $event->content_type ?: 'application/octet-stream')
                     ->post($replay->target_url);
             } catch (ConnectionException $e) {
-                $replay->update(['status' => Replay::RETRYING, 'error' => Str::limit($e->getMessage(), 500)]);
+                // Le détail réseau reste dans les journaux : l'afficher révélerait la topologie atteinte.
+                Log::warning('Rejeu : erreur de connexion', ['replay' => $replay->id, 'detail' => $e->getMessage()]);
+                $replay->update(['status' => Replay::RETRYING, 'error' => 'Connexion impossible ou délai dépassé.']);
 
                 throw new RuntimeException('Erreur réseau lors du rejeu.', previous: $e);
             }
 
-            $excerpt = Str::limit($response->body(), config('relais.replay.response_excerpt_bytes'), '');
+            // Lecture bornée : on ne charge jamais tout le corps de la réponse en mémoire.
+            $excerpt = mb_convert_encoding(
+                $response->toPsrResponse()->getBody()->read(config('relais.replay.response_excerpt_bytes')),
+                'UTF-8',
+                'UTF-8',
+            );
+            $response->toPsrResponse()->getBody()->close();
 
             if ($response->successful()) {
                 $replay->update([
@@ -108,11 +117,11 @@ class SendReplay implements ShouldQueue
 
     public function failed(?Throwable $exception): void
     {
-        app(CurrentOrganization::class)->run($this->organizationId, function () use ($exception) {
-            Replay::find($this->replayId)?->update([
-                'status' => Replay::FAILED,
-                'error' => Str::limit($exception?->getMessage() ?? 'Échec du rejeu.', 500),
-            ]);
+        app(CurrentOrganization::class)->run($this->organizationId, function () {
+            $replay = Replay::find($this->replayId);
+
+            // Le motif détaillé de la dernière tentative est déjà dans `error` ; on ne recopie pas le message brut.
+            $replay?->update(['status' => Replay::FAILED, 'error' => $replay->error ?? 'Échec du rejeu.']);
         });
     }
 }

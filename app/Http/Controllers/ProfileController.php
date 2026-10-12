@@ -47,10 +47,21 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+        $organization = $user->organization;
+        $othersInOrganization = $organization->users()->whereKeyNot($user->id)->exists();
+
+        // Un propriétaire ne laisse pas une organisation orpheline : il retire d'abord les autres membres.
+        if ($user->isOwner() && $othersInOrganization) {
+            return back()->withErrors(['password' => 'Retirez d\'abord les autres membres de l\'organisation.'], 'userDeletion');
+        }
 
         Auth::logout();
 
         $user->delete();
+
+        if (! $othersInOrganization) {
+            $organization->delete();
+        }
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

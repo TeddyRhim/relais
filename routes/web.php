@@ -28,7 +28,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/sources/{source}', [SourceController::class, 'show'])->name('sources.show');
     Route::get('/events', [EventController::class, 'index'])->name('events.index');
     Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
-    Route::post('/events/{event}/replay', [ReplayController::class, 'store'])->name('events.replay');
+    Route::post('/events/{event}/replay', [ReplayController::class, 'store'])->middleware('throttle:30,1')->name('events.replay');
 
     Route::middleware('owner')->group(function () {
         Route::post('/sources', [SourceController::class, 'store'])->name('sources.store');

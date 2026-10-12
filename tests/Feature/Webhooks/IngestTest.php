@@ -144,3 +144,18 @@ test('le secret de signature est chiffré en base', function () {
 
     expect($raw)->not->toBe($source->signing_secret)->and($source->signing_secret)->not->toBeEmpty();
 });
+
+test('les en-têtes de clés et de jetons sont masqués mais la signature est conservée', function () {
+    $source = Source::factory()->create();
+
+    $this->call('POST', '/h/'.$source->token, [], [], [], [
+        'HTTP_X_API_KEY' => 'cle-privee-123',
+        'HTTP_X_AUTH_TOKEN' => 'jeton-prive-456',
+        'HTTP_X_RELAIS_SIGNATURE' => 'abc',
+    ], '{}');
+
+    $stored = eventsOf($source)->first()->headers;
+
+    expect(json_encode($stored))->not->toContain('cle-privee-123')->not->toContain('jeton-prive-456')
+        ->and($stored['x-relais-signature'])->toBe(['abc']);
+});

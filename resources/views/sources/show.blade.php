@@ -13,8 +13,10 @@
                 <h3 class="font-medium text-lg text-gray-900">Réception</h3>
                 <p class="text-sm text-gray-600">Envoyer les webhooks en POST à cette adresse.</p>
                 <code class="block p-3 bg-gray-100 rounded break-all text-sm">{{ $source->receptionUrl() }}</code>
-                <p class="text-sm text-gray-600">Secret de signature (HMAC-SHA256 du corps, en hexadécimal, dans l'en-tête {{ $source->signature_header }}) :</p>
-                <code class="block p-3 bg-gray-100 rounded break-all text-sm">{{ $source->signing_secret }}</code>
+                @if (auth()->user()->isOwner())
+                    <p class="text-sm text-gray-600">Secret de signature (HMAC-SHA256 du corps, en hexadécimal, dans l'en-tête {{ $source->signature_header }}) :</p>
+                    <code class="block p-3 bg-gray-100 rounded break-all text-sm">{{ $source->signing_secret }}</code>
+                @endif
             </div>
 
             @if (auth()->user()->isOwner())

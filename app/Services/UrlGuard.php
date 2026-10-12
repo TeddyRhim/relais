@@ -7,10 +7,18 @@ namespace App\Services;
  *
  * Limite connue : la résolution DNS est contrôlée au moment de l'envoi, mais l'adresse
  * réellement jointe par le client HTTP est résolue une seconde fois (liaison DNS tardive).
- * Pour une exposition publique, ajouter un proxy sortant dédié.
+ * Pour une exposition publique, ajouter un proxy sortant dédié ou fixer l'IP validée (CURLOPT_RESOLVE).
  */
 class UrlGuard
 {
+    /** Plages IPv4 supplémentaires à refuser (partage d'adresses, tests, multidiffusion). */
+    private const BLOCKED_V4 = [
+        ['100.64.0.0', 10],
+        ['192.0.0.0', 24],
+        ['198.18.0.0', 15],
+        ['224.0.0.0', 4],
+    ];
+
     public function isSafe(string $url): bool
     {
         $parts = parse_url($url);
@@ -38,12 +46,48 @@ class UrlGuard
         }
 
         foreach ($ips as $ip) {
-            if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
+            if (! $this->isPublicIp($ip)) {
                 return false;
             }
         }
 
         return true;
+    }
+
+    public function isPublicIp(string $ip): bool
+    {
+        $packed = @inet_pton($ip);
+
+        if ($packed === false) {
+            return false;
+        }
+
+        if (strlen($packed) === 16) {
+            // ::/8 couvre non spécifiée, boucle locale et IPv4 mappée (::ffff:a.b.c.d) ;
+            // 64:ff9b::/96 (NAT64) et 2002::/16 (6to4) embarquent une IPv4 arbitraire.
+            if ($packed[0] === "\x00" || str_starts_with($packed, "\x00\x64\xff\x9b") || str_starts_with($packed, "\x20\x02")) {
+                return false;
+            }
+        } elseif ($this->inBlockedV4($ip)) {
+            return false;
+        }
+
+        return (bool) filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE);
+    }
+
+    private function inBlockedV4(string $ip): bool
+    {
+        $long = ip2long($ip);
+
+        foreach (self::BLOCKED_V4 as [$network, $bits]) {
+            $mask = -1 << (32 - $bits);
+
+            if (($long & $mask) === (ip2long($network) & $mask)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

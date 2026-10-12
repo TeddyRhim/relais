@@ -13,7 +13,9 @@ class ReplayController extends Controller
 {
     public function store(Request $request, WebhookEvent $event): RedirectResponse
     {
-        $request->merge(['target_url' => $request->input('target_url') ?: $event->source->target_url]);
+        // Une cible libre est réservée au propriétaire ; un membre rejoue vers la cible configurée de la source.
+        $custom = $request->user()->isOwner() ? $request->input('target_url') : null;
+        $request->merge(['target_url' => $custom ?: $event->source->target_url]);
 
         $data = $request->validate([
             'target_url' => ['required', 'string', 'max:2000', new SafeTargetUrl],

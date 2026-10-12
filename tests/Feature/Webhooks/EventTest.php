@@ -79,3 +79,24 @@ test('une autre organisation ne peut pas rejouer un événement', function () {
     Queue::assertNothingPushed();
     expect(Replay::withoutGlobalScopes()->count())->toBe(0);
 });
+
+test('un membre rejoue seulement vers la cible de la source, jamais vers une cible libre', function () {
+    Queue::fake();
+    $owner = User::factory()->create();
+    $member = User::factory()->memberOf($owner->organization)->create();
+    $source = Source::factory()->for($owner->organization)->create(['target_url' => 'https://93.184.216.34/officielle']);
+    $event = WebhookEvent::factory()->for($source)->create();
+
+    $this->actingAs($member)->post('/events/'.$event->id.'/replay', ['target_url' => 'https://93.184.216.35/libre'])->assertSessionHasNoErrors();
+
+    expect(Replay::withoutGlobalScopes()->first()->target_url)->toBe('https://93.184.216.34/officielle');
+});
+
+test('le secret de signature n\'est montré qu\'au propriétaire', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->memberOf($owner->organization)->create();
+    $source = Source::factory()->for($owner->organization)->create();
+
+    $this->actingAs($owner)->get('/sources/'.$source->id)->assertSee($source->signing_secret);
+    $this->actingAs($member)->get('/sources/'.$source->id)->assertDontSee($source->signing_secret);
+});

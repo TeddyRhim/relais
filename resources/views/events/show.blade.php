@@ -28,7 +28,11 @@
                 <form method="POST" action="{{ route('events.replay', $event) }}" class="mt-4 flex gap-4 items-start">
                     @csrf
                     <div class="flex-1">
-                        <x-text-input name="target_url" class="block w-full" placeholder="{{ $event->source->target_url ?: 'https://exemple.org/webhook' }}" :value="old('target_url')" />
+                        @if (auth()->user()->isOwner())
+                            <x-text-input name="target_url" class="block w-full" placeholder="{{ $event->source->target_url ?: 'https://exemple.org/webhook' }}" :value="old('target_url')" />
+                        @else
+                            <p class="text-sm text-gray-600">Cible : {{ $event->source->target_url ?: 'aucune cible configurée sur la source' }}</p>
+                        @endif
                         <x-input-error :messages="$errors->get('target_url')" class="mt-2" />
                     </div>
                     <x-primary-button>Rejouer</x-primary-button>

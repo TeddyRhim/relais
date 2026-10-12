@@ -11,8 +11,8 @@ use Illuminate\Http\Request;
 
 class IngestController extends Controller
 {
-    /** En-têtes dont la valeur n'est jamais conservée. */
-    private const SENSITIVE_HEADERS = ['authorization', 'cookie', 'proxy-authorization'];
+    /** En-têtes dont la valeur n'est jamais conservée (les signatures restent : elles servent au rejeu). */
+    private const SENSITIVE_HEADERS = '/auth|cookie|token|secret|password|api-?key/i';
 
     public function __invoke(Request $request, string $token, CurrentOrganization $current, SignatureVerifier $verifier): JsonResponse
     {
@@ -52,8 +52,8 @@ class IngestController extends Controller
     {
         $headers = $request->headers->all();
 
-        foreach (self::SENSITIVE_HEADERS as $name) {
-            if (isset($headers[$name])) {
+        foreach ($headers as $name => $values) {
+            if (preg_match(self::SENSITIVE_HEADERS, $name)) {
                 $headers[$name] = ['[masqué]'];
             }
         }
