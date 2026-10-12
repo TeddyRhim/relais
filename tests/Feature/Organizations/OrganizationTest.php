@@ -5,6 +5,8 @@ use App\Mail\InvitationMail;
 use App\Models\Invitation;
 use App\Models\Organization;
 use App\Models\User;
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Middleware\TrustHosts;
 use Illuminate\Support\Facades\Mail;
 
 test('l\'inscription crée une organisation dont l\'utilisateur est propriétaire', function () {
@@ -158,4 +160,9 @@ test('un propriétaire seul supprime son compte et son organisation', function (
     $this->actingAs($owner)->delete('/profile', ['password' => 'password'])->assertRedirect('/');
 
     expect(User::find($owner->id))->toBeNull()->and(Organization::find($orgId))->toBeNull();
+});
+
+test('la vérification de l\'hôte est active dans la pile globale', function () {
+    // Laravel la désactive pendant les tests unitaires : on vérifie sa présence, le comportement est contrôlé à la main.
+    expect(app(Kernel::class)->hasMiddleware(TrustHosts::class))->toBeTrue();
 });

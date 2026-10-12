@@ -1,0 +1,59 @@
+# Démarrage : créer un fichier .env avec APP_KEY (php artisan key:generate --show) et DB_PASSWORD, puis `docker compose up --build`.
+# Non testé localement (Docker absent du poste de développement) : la syntaxe est validée par la CI.
+
+x-app: &app
+  build: .
+  image: relais:local
+  environment: &app-env
+    APP_ENV: production
+    APP_DEBUG: "false"
+    APP_KEY: ${APP_KEY:?renseigner APP_KEY dans .env (php artisan key:generate --show)}
+    APP_URL: ${APP_URL:-http://localhost:8080}
+    DB_CONNECTION: pgsql
+    DB_HOST: db
+    DB_PORT: 5432
+    DB_DATABASE: ${DB_DATABASE:-relais}
+    DB_USERNAME: ${DB_USERNAME:-relais}
+    DB_PASSWORD: ${DB_PASSWORD:?renseigner DB_PASSWORD dans .env}
+    QUEUE_CONNECTION: database
+    SESSION_DRIVER: database
+    CACHE_STORE: database
+    BILLING_DRIVER: fake
+    # Démonstration assumée : le faux fournisseur n'encaisse rien. À retirer avec un vrai fournisseur.
+    RELAIS_ALLOW_FAKE_BILLING: "true"
+    BILLING_WEBHOOK_SECRET: ${BILLING_WEBHOOK_SECRET:-}
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  web:
+    <<: *app
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "true"
+    ports:
+      - "8080:80"
+
+  worker:
+    <<: *app
+    user: www-data
+    command: php artisan queue:work --sleep=3 --no-ansi
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-relais}
+      POSTGRES_USER: ${DB_USERNAME:-relais}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?renseigner DB_PASSWORD dans .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-data:

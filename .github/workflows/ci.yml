@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Pint
+        run: vendor/bin/pint --test
+
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [sqlite, pgsql]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: relais_test
+          POSTGRES_USER: relais
+          # Base jetable du job : le mot de passe est l'identifiant du commit, aucun secret réel.
+          POSTGRES_PASSWORD: ${{ github.sha }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U relais -d relais_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_sqlite, pdo_pgsql
+          tools: composer
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Clé d'application jetable
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-ansi
+      - name: Tests (${{ matrix.database }})
+        env:
+          DB_CONNECTION: ${{ matrix.database == 'pgsql' && 'pgsql' || 'sqlite' }}
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: ${{ matrix.database == 'pgsql' && 'relais_test' || ':memory:' }}
+          DB_USERNAME: relais
+          DB_PASSWORD: ${{ github.sha }}
+        run: php artisan test --no-ansi
+
+  assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construire l'image
+        run: docker build -t relais:ci .
+      - name: Valider le fichier Compose
+        env:
+          APP_KEY: ${{ github.sha }}
+          DB_PASSWORD: ${{ github.sha }}
+        run: docker compose config --quiet

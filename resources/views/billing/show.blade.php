@@ -38,7 +38,9 @@
                         </li>
                     @endforeach
                 </ul>
-                <p class="mt-4 text-xs text-gray-500">Mode démonstration : aucun paiement réel n'est effectué.</p>
+                @if (config('relais.billing.driver') === 'fake')
+                    <p class="mt-4 p-3 bg-yellow-50 text-sm text-yellow-900 rounded">Mode démonstration : aucun paiement réel n'est effectué, le changement de plan est immédiat.</p>
+                @endif
             </div>
         </div>
     </div>

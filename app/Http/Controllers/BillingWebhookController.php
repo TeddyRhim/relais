@@ -18,6 +18,9 @@ class BillingWebhookController extends Controller
 {
     public function __invoke(Request $request, SignatureVerifier $verifier, BillingService $billing): JsonResponse
     {
+        // Route sans session : une validation qui échoue doit répondre 422 en JSON, pas rediriger.
+        $request->headers->set('Accept', 'application/json');
+
         $secret = config('relais.billing.webhook_secret');
 
         // Sans secret configuré, aucun webhook n'est accepté : jamais de valeur par défaut.

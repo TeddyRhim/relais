@@ -43,6 +43,8 @@ return [
     'billing' => [
         'driver' => env('BILLING_DRIVER', 'fake'),
         'webhook_secret' => env('BILLING_WEBHOOK_SECRET'),
+        // Le faux fournisseur n'encaisse rien : interdit en production sauf démonstration assumée.
+        'allow_fake_in_production' => (bool) env('RELAIS_ALLOW_FAKE_BILLING', false),
     ],
 
     /*

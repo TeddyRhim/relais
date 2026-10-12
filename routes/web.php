@@ -12,9 +12,7 @@ use App\Http\Controllers\ReplayController;
 use App\Http\Controllers\SourceController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::view('/', 'welcome');
 
 Route::get('/dashboard', DashboardController::class)->middleware(['auth', 'verified'])->name('dashboard');
 

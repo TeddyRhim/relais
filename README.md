@@ -1,59 +1,81 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Relais
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Service de réception et de rejeu de webhooks. Une organisation crée des sources, chacune avec sa propre adresse de réception ; Relais conserve chaque webhook reçu, vérifie sa signature, permet de le rejouer vers une adresse cible avec de nouvelles tentatives automatiques, et mesure la consommation par rapport à un quota mensuel.
 
-## About Laravel
+Projet de démonstration (Laravel 12, PHP 8.2, Blade et Tailwind, Pest).
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Fonctionnalités
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Organisations avec deux rôles (propriétaire, membre) et invitations par lien.
+- Sources avec adresse de réception dédiée et vérification de signature.
+- Liste et détail des événements reçus, rejeu manuel avec suivi du statut et nouvelles tentatives espacées.
+- Plans gratuit et Pro avec quota mensuel ; la facturation passe par une interface, avec un faux fournisseur pour la démonstration (aucun paiement réel).
+- API en lecture seule, authentifiée par clés, avec limitation de débit.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Aperçu
 
-## Learning Laravel
+Les captures d'écran seront ajoutées avec des données d'exemple. Pour obtenir une instance remplie de données fictives, voir la commande de démonstration plus bas.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Installation
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Prérequis : PHP 8.2 ou plus, Composer, Node.js.
 
-## Laravel Sponsors
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+npm install
+npm run build
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Lancer l'application et le traitement des rejeux (deux terminaux) :
 
-### Premium Partners
+```bash
+php artisan serve
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+php artisan queue:work
+```
 
-## Contributing
+### Compte de démonstration
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+La commande crée un compte et des données fictives. Elle demande l'adresse et le mot de passe, ou lit `DEMO_EMAIL` et `DEMO_PASSWORD` dans l'environnement. Aucun identifiant n'est fourni avec le dépôt.
 
-## Code of Conduct
+```bash
+php artisan relais:demo
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Docker
 
-## Security Vulnerabilities
+Créer un fichier `.env` contenant `APP_KEY` (obtenu avec `php artisan key:generate --show`) et `DB_PASSWORD`, puis :
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+docker compose up --build
+```
 
-## License
+L'application est servie sur le port 8080, avec PostgreSQL et un service dédié au traitement des rejeux.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## API
+
+Les clés se créent depuis la page « API » de l'interface. Elles donnent un accès en lecture seule aux sources et aux événements de l'organisation.
+
+```bash
+curl -H "Authorization: Bearer <clé>" http://localhost:8000/api/v1/events
+```
+
+Points d'accès : `GET /api/v1/sources`, `GET /api/v1/events` (paramètres `source` et `per_page`), `GET /api/v1/events/{id}`.
+
+## Tests
+
+```bash
+php artisan test
+vendor/bin/pint --test
+```
+
+Les tests utilisent SQLite en mémoire. Pour exécuter la suite sur PostgreSQL, définir `DB_CONNECTION=pgsql` et les variables de connexion d'une base dédiée aux tests ; c'est ce que fait l'intégration continue.
+
+## Configuration
+
+Les réglages propres au projet sont dans `config/relais.php` et se surchargent par variables d'environnement (voir `.env.example`). Aucun secret n'est versionné.

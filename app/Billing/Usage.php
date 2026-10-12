@@ -3,11 +3,12 @@
 namespace App\Billing;
 
 use App\Models\Organization;
-use App\Models\WebhookEvent;
+use App\Models\UsageCounter;
 use App\Tenancy\CurrentOrganization;
 
 /**
- * Consommation du quota mensuel d'une organisation (événements reçus pendant le mois civil en cours).
+ * Consommation du quota mensuel d'une organisation (événements reçus pendant le mois civil en cours,
+ * lus dans un compteur qui survit à la suppression des sources et des événements).
  * Le dépassement peut excéder de quelques unités sous forte concurrence : le quota est une limite
  * commerciale, pas une garantie stricte.
  */
@@ -17,9 +18,9 @@ class Usage
 
     public function used(Organization $organization): int
     {
-        return $this->current->run($organization, fn () => WebhookEvent::query()
-            ->where('created_at', '>=', now()->startOfMonth())
-            ->count());
+        return (int) $this->current->run($organization, fn () => UsageCounter::query()
+            ->where('period', now()->format('Y-m'))
+            ->value('events'));
     }
 
     public function limit(Organization $organization): int

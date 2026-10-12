@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use InvalidArgumentException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,9 +21,19 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(CurrentOrganization::class);
 
-        $this->app->bind(BillingProvider::class, fn () => match (config('relais.billing.driver')) {
-            'fake' => new FakeBillingProvider,
-            default => throw new InvalidArgumentException('Fournisseur de facturation inconnu : '.config('relais.billing.driver')),
+        $this->app->bind(BillingProvider::class, function () {
+            $driver = config('relais.billing.driver');
+
+            if ($driver === 'fake') {
+                // Le faux fournisseur donne le plan Pro sans paiement : refusé en production sauf choix explicite.
+                if ($this->app->isProduction() && ! config('relais.billing.allow_fake_in_production')) {
+                    throw new InvalidArgumentException('Le faux fournisseur de facturation est interdit en production (RELAIS_ALLOW_FAKE_BILLING=true pour une démonstration publique).');
+                }
+
+                return new FakeBillingProvider;
+            }
+
+            throw new InvalidArgumentException('Fournisseur de facturation inconnu : '.$driver);
         });
     }
 
@@ -32,8 +43,15 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // API : par clé (ou par IP si la requête n'est pas authentifiée).
-        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(config('relais.api_rate_per_minute'))
-            ->by($request->user()?->currentAccessToken()?->id ? 'key:'.$request->user()->currentAccessToken()->id : 'ip:'.$request->ip()));
+        RateLimiter::for('api', function (Request $request) {
+            $token = $request->user()?->currentAccessToken();
+
+            return Limit::perMinute(config('relais.api_rate_per_minute'))
+                ->by($token instanceof PersonalAccessToken ? 'key:'.$token->id : 'ip:'.$request->ip());
+        });
+
+        // Webhooks du fournisseur de facturation : compartiment séparé de la réception, par adresse IP.
+        RateLimiter::for('billing-webhook', fn (Request $request) => Limit::perMinute(60)->by('ip:'.$request->ip()));
 
         // Une limite par source, plus une limite par adresse IP (contre le balayage de jetons).
         RateLimiter::for('ingest', fn (Request $request) => [

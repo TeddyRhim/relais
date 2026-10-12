@@ -21,6 +21,8 @@ dataset('urls interdites', [
     'ipv4 mappee privee' => 'http://[::ffff:10.0.0.1]/x',
     'nat64' => 'http://[64:ff9b::7f00:1]/x',
     '6to4' => 'http://[2002:7f00:1::]/x',
+    'multidiffusion ipv6' => 'http://[ff02::1]/x',
+    'teredo' => 'http://[2001::1]/x',
     'cgnat' => 'http://100.64.0.1/x',
     'multidiffusion' => 'http://224.0.0.1/x',
     'benchmark' => 'http://198.18.0.1/x',

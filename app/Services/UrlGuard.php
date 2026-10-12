@@ -65,7 +65,9 @@ class UrlGuard
         if (strlen($packed) === 16) {
             // ::/8 couvre non spécifiée, boucle locale et IPv4 mappée (::ffff:a.b.c.d) ;
             // 64:ff9b::/96 (NAT64) et 2002::/16 (6to4) embarquent une IPv4 arbitraire.
-            if ($packed[0] === "\x00" || str_starts_with($packed, "\x00\x64\xff\x9b") || str_starts_with($packed, "\x20\x02")) {
+            // ff00::/8 (multidiffusion) et 2001::/32 (Teredo, embarque aussi une IPv4) sont refusés de même.
+            if ($packed[0] === "\x00" || $packed[0] === "\xff" || str_starts_with($packed, "\x00\x64\xff\x9b")
+                || str_starts_with($packed, "\x20\x02") || str_starts_with($packed, "\x20\x01\x00\x00")) {
                 return false;
             }
         } elseif ($this->inBlockedV4($ip)) {
