@@ -1,26 +1,28 @@
 @if ($events->isEmpty())
-    <p class="mt-4 text-gray-600">Aucun événement reçu.</p>
+    <x-empty-state title="Aucun événement reçu" text="Les webhooks envoyés à l'adresse d'une source apparaissent ici, avec leur contenu et leur signature." />
 @else
-    <table class="mt-4 w-full text-sm text-left">
-        <thead class="text-gray-500">
-            <tr>
-                <th class="py-2">Reçu</th>
-                <th>Source</th>
-                <th>Signature</th>
-                <th>Taille</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody class="divide-y">
-            @foreach ($events as $event)
+    <div class="mt-4 overflow-x-auto">
+        <table class="tbl">
+            <thead>
                 <tr>
-                    <td class="py-2">{{ $event->created_at->format('d/m/Y H:i:s') }}</td>
-                    <td>{{ $event->source->name }}</td>
-                    <td>{{ ['valid' => 'valide', 'invalid' => 'invalide', 'missing' => 'absente'][$event->signature_status] }}</td>
-                    <td>{{ strlen($event->body) }} o</td>
-                    <td class="text-right"><a href="{{ route('events.show', $event) }}" class="text-indigo-700 underline">Détail</a></td>
+                    <th>Reçu</th>
+                    <th>Source</th>
+                    <th>Signature</th>
+                    <th>Taille</th>
+                    <th></th>
                 </tr>
-            @endforeach
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach ($events as $event)
+                    <tr>
+                        <td class="font-mono text-xs">{{ $event->created_at->format('d/m/Y H:i:s') }}</td>
+                        <td>{{ $event->source->name }}</td>
+                        <td>@include('events._signature', ['status' => $event->signature_status])</td>
+                        <td class="font-mono text-xs text-ink-500">{{ strlen($event->body) }} o</td>
+                        <td class="text-right"><a href="{{ route('events.show', $event) }}" class="link">Détail</a></td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
 @endif
