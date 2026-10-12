@@ -106,3 +106,38 @@ test('le webhook ignore une référence inconnue sans erreur', function () {
 
     postBillingWebhook($this, ['type' => 'subscription.updated', 'reference' => 'inconnue', 'plan' => 'pro'])->assertOk();
 });
+
+test('le faux fournisseur est refusé en production sauf choix explicite', function () {
+    app()->detectEnvironment(fn () => 'production');
+    config(['relais.billing.driver' => 'fake', 'relais.billing.allow_fake_in_production' => false]);
+
+    expect(fn () => app(BillingProvider::class))->toThrow(InvalidArgumentException::class);
+
+    config(['relais.billing.allow_fake_in_production' => true]);
+
+    expect(app(BillingProvider::class))->toBeInstanceOf(FakeBillingProvider::class);
+});
+
+test('la page de facturation signale le mode démonstration', function () {
+    $this->actingAs(User::factory()->create())->get('/billing')->assertSee('Mode démonstration');
+});
+
+test('un webhook de facturation invalide répond en JSON sans redirection', function () {
+    config(['relais.billing.webhook_secret' => 'secret-de-test']);
+    $body = json_encode(['type' => 'inconnu', 'reference' => 'x']);
+
+    $this->call('POST', '/billing/webhook', [], [], [], [
+        'CONTENT_TYPE' => 'application/json',
+        'HTTP_X_BILLING_SIGNATURE' => billingSignature($body),
+    ], $body)->assertStatus(422);
+});
+
+test('le webhook de facturation a son propre limiteur, distinct de la réception', function () {
+    $resolved = fn (string $name) => app('router')->resolveMiddleware(
+        Route::getRoutes()->getByName($name)->gatherMiddleware(),
+        Route::getRoutes()->getByName($name)->excludedMiddleware(),
+    );
+
+    expect(implode(' ', $resolved('billing.webhook')))->toContain('ThrottleRequests:billing-webhook')->not->toContain('ThrottleRequests:ingest');
+    expect(implode(' ', $resolved('ingest')))->toContain('ThrottleRequests:ingest');
+});

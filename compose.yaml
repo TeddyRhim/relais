@@ -19,6 +19,8 @@ x-app: &app
     SESSION_DRIVER: database
     CACHE_STORE: database
     BILLING_DRIVER: fake
+    # Démonstration assumée : le faux fournisseur n'encaisse rien. À retirer avec un vrai fournisseur.
+    RELAIS_ALLOW_FAKE_BILLING: "true"
     BILLING_WEBHOOK_SECRET: ${BILLING_WEBHOOK_SECRET:-}
   depends_on:
     db:

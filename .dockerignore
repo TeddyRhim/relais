@@ -15,3 +15,11 @@ database/*.sqlite
 tests
 .claude
 CLAUDE.md
+bootstrap/cache/*.php
+storage/app/*
+storage/*.key
+storage/pail
+auth.json
+.idea
+.vscode
+.phpunit.cache

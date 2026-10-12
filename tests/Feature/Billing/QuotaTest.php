@@ -71,3 +71,27 @@ test('les rejeux ne consomment pas le quota', function () {
 
     expect(app(Usage::class)->used($source->organization))->toBe(1);
 });
+
+test('supprimer une source ne remet pas le quota à zéro', function () {
+    config(['relais.plans.free.events_per_month' => 2]);
+    $owner = User::factory()->create();
+    $source = Source::factory()->for($owner->organization)->create();
+
+    $this->postJson('/h/'.$source->token, [])->assertStatus(202);
+    $this->postJson('/h/'.$source->token, [])->assertStatus(202);
+
+    $this->actingAs($owner)->delete('/sources/'.$source->id)->assertRedirect();
+    $fresh = Source::factory()->for($owner->organization)->create();
+
+    expect(WebhookEvent::withoutGlobalScopes()->count())->toBe(0)
+        ->and(app(Usage::class)->used($owner->organization))->toBe(2);
+    $this->postJson('/h/'.$fresh->token, [])->assertStatus(429);
+});
+
+test('le compteur est propre à chaque mois', function () {
+    $source = Source::factory()->create();
+    WebhookEvent::factory()->count(2)->for($source)->create(['created_at' => now()->subMonthNoOverflow()]);
+    WebhookEvent::factory()->for($source)->create();
+
+    expect(app(Usage::class)->used($source->organization))->toBe(1);
+});

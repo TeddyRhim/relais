@@ -21,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Seul l'hôte de APP_URL est accepté : sinon un en-tête Host forgé détourne les liens des e-mails
+        // (réinitialisation de mot de passe, invitations) vers un domaine tiers.
+        $middleware->trustHosts(at: fn () => array_filter([parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)]));
+
         $middleware->alias([
             'owner' => EnsureOwner::class,
             'abilities' => CheckAbilities::class,

@@ -27,6 +27,12 @@ class WebhookEvent extends Model
         return ['headers' => 'array'];
     }
 
+    protected static function booted(): void
+    {
+        // Le quota compte les événements reçus, même si leur source est supprimée ensuite.
+        static::created(fn (WebhookEvent $event) => UsageCounter::record($event->organization_id, $event->created_at));
+    }
+
     public function source(): BelongsTo
     {
         return $this->belongsTo(Source::class);

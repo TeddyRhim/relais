@@ -12,4 +12,9 @@ if [ "$RUN_MIGRATIONS" = "true" ]; then
     php artisan migrate --force --no-ansi
 fi
 
+# En root, les fichiers créés ci-dessus (journaux, caches) doivent rester écrivables par www-data (serveur et worker).
+if [ "$(id -u)" = "0" ]; then
+    chown -R www-data:www-data storage bootstrap/cache
+fi
+
 exec "$@"

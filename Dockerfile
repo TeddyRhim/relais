@@ -31,7 +31,7 @@ COPY . .
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=assets /app/public/build ./public/build
 
-RUN mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod +x docker/entrypoint.sh
 

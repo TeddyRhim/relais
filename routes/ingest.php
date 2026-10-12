@@ -8,4 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::post('/h/{token}', IngestController::class)->name('ingest');
 
 // Événements du fournisseur de facturation : authentifiés par signature, pas par session.
-Route::post('/billing/webhook', BillingWebhookController::class)->name('billing.webhook');
+Route::post('/billing/webhook', BillingWebhookController::class)
+    ->withoutMiddleware('throttle:ingest')
+    ->middleware('throttle:billing-webhook')
+    ->name('billing.webhook');
