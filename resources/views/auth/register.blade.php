@@ -9,10 +9,25 @@
             <x-input-error :messages="$errors->get('name')" class="mt-2" />
         </div>
 
+        @if ($invitationToken)
+            <input type="hidden" name="invitation" value="{{ $invitationToken }}">
+            <p class="mt-4 text-sm text-gray-600">
+                Vous rejoignez l'organisation {{ $invitation->organization->name }}.
+            </p>
+            <x-input-error :messages="$errors->get('invitation')" class="mt-2" />
+        @else
+            <!-- Organization -->
+            <div class="mt-4">
+                <x-input-label for="organization_name" value="Nom de l'organisation" />
+                <x-text-input id="organization_name" class="block mt-1 w-full" type="text" name="organization_name" :value="old('organization_name')" required />
+                <x-input-error :messages="$errors->get('organization_name')" class="mt-2" />
+            </div>
+        @endif
+
         <!-- Email Address -->
         <div class="mt-4">
             <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
+            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $invitation?->email)" required autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
