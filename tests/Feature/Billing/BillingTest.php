@@ -15,7 +15,7 @@ function billingSignature(string $body, string $secret = 'secret-de-test'): stri
 
 function postBillingWebhook($test, array $payload, ?string $signature = null)
 {
-    $body = json_encode($payload);
+    $body = json_encode($payload + ['timestamp' => time()]);
 
     return $test->call('POST', '/billing/webhook', [], [], [], array_filter([
         'CONTENT_TYPE' => 'application/json',
@@ -140,4 +140,27 @@ test('le webhook de facturation a son propre limiteur, distinct de la réception
 
     expect(implode(' ', $resolved('billing.webhook')))->toContain('ThrottleRequests:billing-webhook')->not->toContain('ThrottleRequests:ingest');
     expect(implode(' ', $resolved('ingest')))->toContain('ThrottleRequests:ingest');
+});
+
+test('un webhook de facturation signé mais ancien est refusé (rejeu)', function () {
+    config(['relais.billing.webhook_secret' => 'secret-de-test']);
+    $org = Organization::factory()->create(['billing_reference' => 'sub_123']);
+    $body = json_encode(['type' => 'subscription.updated', 'reference' => 'sub_123', 'plan' => 'pro', 'timestamp' => time() - 3600]);
+
+    $this->call('POST', '/billing/webhook', [], [], [], [
+        'CONTENT_TYPE' => 'application/json',
+        'HTTP_X_BILLING_SIGNATURE' => billingSignature($body),
+    ], $body)->assertStatus(401);
+
+    expect($org->fresh()->plan)->toBe(Plan::Free);
+});
+
+test('un webhook de facturation sans horodatage est refusé', function () {
+    config(['relais.billing.webhook_secret' => 'secret-de-test']);
+    $body = json_encode(['type' => 'subscription.canceled', 'reference' => 'x']);
+
+    $this->call('POST', '/billing/webhook', [], [], [], [
+        'CONTENT_TYPE' => 'application/json',
+        'HTTP_X_BILLING_SIGNATURE' => billingSignature($body),
+    ], $body)->assertStatus(422);
 });

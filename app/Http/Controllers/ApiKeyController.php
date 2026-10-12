@@ -8,6 +8,8 @@ use Illuminate\View\View;
 
 class ApiKeyController extends Controller
 {
+    private const MAX_KEYS = 10;
+
     public function index(Request $request): View
     {
         return view('api-keys.index', ['keys' => $request->user()->tokens()->latest()->get()]);
@@ -16,6 +18,10 @@ class ApiKeyController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate(['name' => ['required', 'string', 'max:100']]);
+
+        if ($request->user()->tokens()->count() >= self::MAX_KEYS) {
+            return back()->withErrors(['name' => 'Nombre maximal de clés atteint ('.self::MAX_KEYS.') : révoquez-en une.']);
+        }
 
         $token = $request->user()->createToken($data['name'], ['events:read'], now()->addDays(90));
 

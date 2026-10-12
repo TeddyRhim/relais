@@ -49,3 +49,15 @@ test('la page des clés exige une connexion et un nom', function () {
     $this->get('/api-keys')->assertRedirect('/login');
     $this->actingAs(User::factory()->create())->post('/api-keys', [])->assertSessionHasErrors('name');
 });
+
+test('le nombre de clés par utilisateur est plafonné', function () {
+    $user = User::factory()->create();
+
+    foreach (range(1, 10) as $i) {
+        $user->createToken('k'.$i, ['events:read']);
+    }
+
+    $this->actingAs($user)->post('/api-keys', ['name' => 'onzieme'])->assertSessionHasErrors('name');
+
+    expect($user->tokens()->count())->toBe(10);
+});

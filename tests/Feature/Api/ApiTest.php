@@ -107,3 +107,13 @@ test('la clé d\'un utilisateur d\'une organisation ne donne jamais accès à un
 
     $this->withToken(apiKeyFor($a))->getJson('/api/v1/events')->assertJsonPath('meta.total', 0);
 });
+
+test('les essais de clés invalides sont limités par adresse IP avant l\'authentification', function () {
+    config(['relais.api_rate_per_minute' => 1]);
+
+    foreach (range(1, 5) as $ignored) {
+        $this->withToken('rl_invalide')->getJson('/api/v1/events')->assertStatus(401);
+    }
+
+    $this->withToken('rl_invalide')->getJson('/api/v1/events')->assertStatus(429);
+});
