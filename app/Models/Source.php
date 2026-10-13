@@ -16,11 +16,12 @@ class Source extends Model
 
     protected $fillable = ['name', 'signature_header', 'require_signature', 'target_url'];
 
-    protected $hidden = ['signing_secret'];
+    protected $hidden = ['token', 'token_hash', 'signing_secret'];
 
     protected function casts(): array
     {
         return [
+            'token' => 'encrypted',
             'signing_secret' => 'encrypted',
             'require_signature' => 'boolean',
         ];
@@ -33,6 +34,23 @@ class Source extends Model
             $source->signing_secret ??= Str::random(48);
             $source->signature_header ??= config('relais.default_signature_header');
         });
+
+        // Le jeton est chiffré en base ; seule son empreinte sert à la recherche.
+        // `saving` passe avant `creating` : l'empreinte est calculée ici, après la génération du jeton.
+        static::creating(function (Source $source) {
+            $source->token_hash = self::hashToken($source->token);
+        });
+
+        static::updating(function (Source $source) {
+            if ($source->isDirty('token')) {
+                $source->token_hash = self::hashToken($source->token);
+            }
+        });
+    }
+
+    public static function hashToken(string $token): string
+    {
+        return hash('sha256', $token);
     }
 
     public function events(): HasMany
@@ -47,10 +65,10 @@ class Source extends Model
 
     /**
      * Retrouve une source par son jeton d'URL. L'émetteur du webhook n'a pas de session :
-     * c'est avec cette recherche (sur un secret) que le contexte d'organisation est établi.
+     * c'est avec cette recherche (sur l'empreinte du jeton) que le contexte d'organisation est établi.
      */
     public static function findByToken(string $token): ?self
     {
-        return static::withoutGlobalScopes()->where('token', $token)->first();
+        return static::withoutGlobalScopes()->where('token_hash', self::hashToken($token))->first();
     }
 }

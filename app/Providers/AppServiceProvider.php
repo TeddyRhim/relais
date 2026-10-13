@@ -55,7 +55,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Une limite par source, plus une limite par adresse IP (contre le balayage de jetons).
         RateLimiter::for('ingest', fn (Request $request) => [
-            Limit::perMinute(config('relais.ingest_rate_per_minute'))->by('token:'.$request->route('token')),
+            Limit::perMinute(config('relais.ingest_rate_per_minute'))->by('token:'.hash('sha256', (string) $request->route('token'))),
             Limit::perMinute(config('relais.ingest_rate_per_minute') * 5)->by('ip:'.$request->ip()),
         ]);
     }
