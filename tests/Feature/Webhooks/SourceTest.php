@@ -2,6 +2,7 @@
 
 use App\Models\Source;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 test('le propriétaire crée une source avec jeton et secret générés', function () {
     $owner = User::factory()->create();
@@ -76,4 +77,16 @@ test('le propriétaire supprime sa source', function () {
     $this->actingAs($owner)->delete('/sources/'.$source->id)->assertRedirect(route('sources.index'));
 
     expect(Source::withoutGlobalScopes()->count())->toBe(0);
+});
+
+test('le jeton de réception est chiffré en base et retrouvé par son empreinte', function () {
+    $owner = User::factory()->create();
+    $source = Source::factory()->for($owner->organization)->create();
+
+    $stored = DB::table('sources')->where('id', $source->id)->first();
+
+    expect($stored->token)->not->toBe($source->token)
+        ->and($stored->token_hash)->toBe(hash('sha256', $source->token))
+        ->and(Source::findByToken($source->token)?->id)->toBe($source->id)
+        ->and(Source::findByToken($stored->token_hash))->toBeNull();
 });

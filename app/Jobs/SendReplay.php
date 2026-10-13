@@ -86,12 +86,19 @@ class SendReplay implements ShouldQueue
             }
 
             // Lecture bornée : on ne charge jamais tout le corps de la réponse en mémoire.
-            $excerpt = mb_convert_encoding(
-                $response->toPsrResponse()->getBody()->read(config('relais.replay.response_excerpt_bytes')),
-                'UTF-8',
-                'UTF-8',
-            );
-            $response->toPsrResponse()->getBody()->close();
+            // Un flux peut rendre moins d'octets que demandé : on lit jusqu'à la limite ou la fin.
+            $stream = $response->toPsrResponse()->getBody();
+            $limit = config('relais.replay.response_excerpt_bytes');
+            $raw = '';
+            while (strlen($raw) < $limit && ! $stream->eof()) {
+                $chunk = $stream->read($limit - strlen($raw));
+                if ($chunk === '') {
+                    break;
+                }
+                $raw .= $chunk;
+            }
+            $stream->close();
+            $excerpt = mb_convert_encoding($raw, 'UTF-8', 'UTF-8');
 
             if ($response->successful()) {
                 $replay->update([

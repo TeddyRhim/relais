@@ -21,6 +21,7 @@ Laravel 12, PHP 8.2, Blade + Tailwind (Breeze), Pest. Base : SQLite en local et 
 ## Architecture
 - Isolation : le trait `App\Tenancy\BelongsToOrganization` ajoute `OrganizationScope` et remplit `organization_id` ; le contexte vient du singleton `CurrentOrganization`, posé par le middleware `SetCurrentOrganization` (placé avant `SubstituteBindings` pour que le binding des routes soit scopé). Sans contexte, aucune ligne n'est visible (échec fermé). En job ou en commande : `app(CurrentOrganization::class)->run($org, fn)`.
 - Organisations : un utilisateur appartient à une seule organisation (`users.organization_id`, `users.role` propriétaire ou membre). Invitations par lien à jeton hashé, valables 7 jours. Le propriétaire gère sources, secret, cible libre de rejeu, invitations et plan ; le membre voit et rejoue vers la cible de la source.
+- Jeton d'URL des sources : chiffré en base (cast `encrypted`) et retrouvé par son empreinte SHA-256 (`token_hash`) ; ne jamais chercher par `token`.
 - Réception : `POST /h/{token}` (`routes/ingest.php`, sans session ni CSRF, limitée par jeton et par IP). Signature valide, invalide ou absente ; option « signature obligatoire » par source.
 - Rejeu : `App\Jobs\SendReplay`, 5 tentatives espacées de 10 s, 1 min, 5 min et 30 min. Garde contre les requêtes vers le réseau interne : `App\Services\UrlGuard`. Réponse lue de façon bornée, redirections non suivies.
 - Quotas : `App\Billing\Usage` lit le compteur mensuel `usage_counters` (alimenté à chaque événement reçu, indépendant de la suppression des sources). Au quota, la réception répond 429 sans stocker. Le webhook de facturation `POST /billing/webhook` est signé et horodaté (5 minutes) ; il est fermé si `BILLING_WEBHOOK_SECRET` est vide.
@@ -29,6 +30,8 @@ Laravel 12, PHP 8.2, Blade + Tailwind (Breeze), Pest. Base : SQLite en local et 
 - En-têtes de sécurité globaux (`SecurityHeaders`), `trustHosts` sur l'hôte de `APP_URL`, faux fournisseur de facturation refusé en production sauf `RELAIS_ALLOW_FAKE_BILLING=true`.
 
 ## Pièges
+- `phpunit.xml` fixe `RELAIS_ALLOW_PRIVATE_TARGETS=false` et la facturation : un `.env` de démonstration ne change pas le résultat des tests.
+- Dependabot ignore les versions majeures : les faire à la main sur une branche dédiée.
 - Les tests appellent `withoutVite()` : aucun build d'assets requis.
 - Hors contexte d'organisation, un modèle scopé renvoie zéro ligne : dans les tests, utiliser `withoutGlobalScopes()` ou `CurrentOrganization::run`.
 - Le message `Module "openssl" is already loaded` d'un PHP mal configuré est inoffensif.

@@ -21,6 +21,9 @@ class IngestController extends Controller
 
         abort_if($source === null, 404);
 
+        // Refus avant lecture quand la taille annoncée dépasse déjà la limite.
+        abort_if((int) $request->header('Content-Length', '0') > config('relais.max_body_bytes'), 413);
+
         $body = $request->getContent();
 
         abort_if(strlen($body) > config('relais.max_body_bytes'), 413);
